@@ -1,0 +1,9 @@
+.help --- displays this window
+.rules --- server rules
+.guard --- official AnimeGuard logo
+.play despacito --- plays despacito
+.poll --- runs a poll yes or no poll, only one per user at a time
+.tally --- tallys the results from a poll
+.lockdown --- toggles server lockdown mode (disables words from the chat filter and displays approval reactions)
+.filter add [term] --- adds a given term to the chat filter (only alphanumeric characters a-z, 0-9)
+.filter remove [term] --- removes a given term from the chat filter
