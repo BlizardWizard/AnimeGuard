@@ -5,5 +5,7 @@ def get_servers():
     server_list.append(line.replace('\n', ''))
   server_list_file.close()
   return server_list
-def update_servers():
-  open("serrver_list.txt", "w")
+
+def update_servers(bot):
+  server_list_file = open("serrver_list.txt", "w")
+  for server in bot.servers
