@@ -7,5 +7,7 @@ def get_servers():
   return server_list
 
 def update_servers(bot):
-  server_list_file = open("serrver_list.txt", "w")
+  server_list_file = open("server_list.txt", "w")
   for server in bot.servers
+    server_list_file.write(server.id)
+  close(server_list_file)
