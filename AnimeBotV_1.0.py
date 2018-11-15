@@ -198,7 +198,7 @@ async def on_reaction_add(reaction, user):
 
 
 
-bot.run("NTExNjI1OTU4NzY0MzE0NjUz.Dstojg.epmW544akvZJ-pAWWCaldKpDuS4")
+
 
 
 
