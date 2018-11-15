@@ -3,31 +3,20 @@ from discord.ext.commands import Bot
 from discord.ext import commands
 import asyncio
 import time
-from AnimeBotV1 import animeCommands
-
+from AnimeBotV1 import servers
+from AnimeBotV1 import filter
 
 Client = discord.Client()
 bot = commands.Bot(command_prefix="%")
 
-# sets up the chat filter list from the chat_filter.txt file
-def update_filter():
-    chat_filter = []
-    filter_file = open("chat_filter.txt", "r")
-    for line in filter_file.readlines():
-        chat_filter.append(line.replace("\n", ''))
-    filter_file.close()
-    return chat_filter
+
 
 def inRoles(checkRole, user):
     for role in user.roles:
         if role.id == checkRole:
             return True
 
-def validFilter(term):
-    for element in filter_bans:
-        if element in term:
-            return False
-    return True
+
 
 def parseHelp():
     commandsString = ""
@@ -36,23 +25,23 @@ def parseHelp():
         commandsString += line
     return commandsString
 
-chat_filter = update_filter()
+chat_filter = filter.filter_update()
 
 bypass_list = ["511625958764314653"]
 chat_banned_roles = ["511630140065972226"]
 polls = []
-hashes = {":thumbsup1:511780305833558026": hash(":thumbsup1:511780305833558026"), ":thumbsdown1:511780358690439168": hash(":thumbsdown1:511780358690439168")}
 lockDown = [2, True, False]
 noPerms = "```You do not have permission to use that command```"
 filter_bans = [' ', '@', '_', '-', '.', '/', '`', ':', ';', '(', ')', '#', '$', '%', '^', '&', '*', '[', ']', '{', '}', '?', '=', '+']
+server_list = []
 
 class Poll:
     def __init__(self, origMessage, chatPoll):
         self.user = origMessage.author.id
         self.origMessage = origMessage
         self.chatPoll = chatPoll
-        self.upVote = 1
-        self.downVote = 1
+        self.upVote = 0
+        self.downVote = 0
 
 @bot.event
 async def on_ready():
@@ -60,18 +49,30 @@ async def on_ready():
     print("I am running on client: " + bot.user.name)
     print("With the ID: " + bot.user.id)
     await bot.change_presence(game=discord.Game(name="do \'.help\'"))
+    servers.update_servers(bot)
+
 
 @bot.event
 async def on_message(message):
+    servers.setup_dir(message.server.id)
+    print(servers.get_server(message.server.id))
     contents = message.content.split(" ")
 # Help command
     if message.content.upper().startswith('.HELP'):
         await bot.send_message(message.channel, "```" + parseHelp() + "```")
 
+# .setup command, various setup commands for per server bot settings
+    if message.content.upper().startswith('.SETUP'):
+        if message.content.upper().replace('.SETUP ', '').startswith('PREFIX'):
+            for server in servers.get_servers():
+                if server == message.server.id:
+                    prefix = message.content.upper().replace('.SETUP PREFIX ', '')
+                    print(prefix)
+
 # Filters out words from the chat filter
     approval = True
     if lockDown[0] == 1:
-        chat_filter = update_filter()
+        chat_filter = filter.filter_update()
         print(chat_filter)
         for term in chat_filter:
             if message.content.upper().find(term) != -1:
@@ -162,43 +163,49 @@ async def on_message(message):
 
 # Chat filter commands
     if message.content.upper().startswith('.FILTER') and inRoles("512120756507770891", message.author):
-        if message.content.upper().replace('.FILTER ', '').startswith('ADD') and validFilter(message.content.upper().replace('.FILTER ADD ', '')):
-            await bot.send_message(message.channel, "```Term \'%s\' Added to Chat Filter```" % message.content.upper().replace('.FILTER ADD ', ''))
+        # '.filter add {}' command
+        if message.content.upper().replace('.FILTER ', '').startswith('ADD') and filter.isValidFilter(message.content.upper().replace('.FILTER ADD ', ''), filter_bans) and message.content.upper().replace('.FILTER ADD ', '') not in filter.filter_update():
+            term = message.content.upper().replace('.FILTER ADD ', '')
+            await bot.send_message(message.channel, "```Term \'%s\' Added to Chat Filter```" % term)
             filter_file = open("chat_filter.txt", "a")
-            filter_file.write("\n" + message.content.upper().replace('.FILTER ADD ', ''))
+            filter_file.write(term + "\n")
             filter_file.close()
-        elif message.content.upper().replace('.FILTER ', '').startswith('ADD') and not validFilter(message.content.upper().replace('.FILTER ADD ', '')):
+        # errors for '.filter add {}' command
+        elif message.content.upper().replace('.FILTER ', '').startswith('ADD') and not filter.isValidFilter(message.content.upper().replace('.FILTER ADD ', ''), filter_bans): # invalid filter characters
             await bot.send_message(message.channel, "```Invaild Filter Input\nPlease only use alphanumeric characters a-z, 0-9```")
+        elif message.content.upper().replace('.FILTER ', '').startswith('ADD') and message.content.upper().replace('.FILTER ADD ', '') in filter.filter_update(): # term already in filter list
+            await bot.send_message(message.channel, "```Term is already in filter list```")
+        # '.filter remove {}' command
         elif message.content.upper().replace('.FILTER ', '').startswith('REMOVE'):
-            print("help")
-            await bot.send_message(message.channel, "```Term \'%s\' Removed```" % "balls")
+            term = message.content.upper().replace('.FILTER REMOVE ', '')
+            filter.filter_remove(term)
+            await bot.send_message(message.channel, "```Term \'%s\' Removed```" % term)
+        elif message.content.upper().replace('.FILTER ', '').startswith('LIST'):
+            await bot.send_message(message.channel, "```" + str(filter.filter_update()) + "```")
     elif message.content.upper().startswith('.FILTER') and not inRoles("512120756507770891", message.author) and message.author.id != bot.user.id:
         await bot.send_message(message.channel, noPerms)
+
+    if message.content.upper().startswith('.REACTION'):
+        await bot.add_reaction(message, ":thumbsup1:511780305833558026")
 
 # on reaction event, particularly for the '.poll' command
 @bot.event
 async def on_reaction_add(reaction, user):
-    print(hash(reaction.emoji))
-    print(hashes[":thumbsup1:511780305833558026"])
-    if (user.id != bot.user.id) and (hash(reaction.emoji) == hashes[":thumbsup1:511780305833558026"] or hashes[":thumbsdown1:511780358690439168"]):
+    if (user.id != bot.user.id) and (reaction.emoji == "<:thumbsup1:511780305833558026>" or "<:thumbsdown1:511780358690439168>"):
         for poll in polls:
             if reaction.message.id == poll.chatPoll.id:
-                if hash(reaction.emoji) == hashes[":thumbsup1:511780305833558026"]:
-                    print("up before")
+                if str(reaction.emoji) == "<:thumbsup1:511780305833558026>":
                     poll.upVote += 1
                     await bot.add_reaction(reaction.message, ":thumbsup1:511780305833558026")
-                    await bot.remove_reaction(reaction.message, ":thumbsup1:511780305833558026", user.id)
-                    print("up")
-                elif reaction.emoji == hashes[":thumbsdown1:511780358690439168"]:
-                    poll.downVote -= 1
+                elif str(reaction.emoji) == "<:thumbsdown1:511780358690439168>":
+                    poll.downVote += 1
                     await bot.add_reaction(reaction.message, ":thumbsdown1:511780358690439168")
-                    await bot.remove_reaction(reaction.message, ":thumbsdown1:511780358690439168", user.id)
-                    print("down")
 
 
 
 
 
+bot.run("")
 
 
 
