@@ -1,4 +1,5 @@
-.help --- displays this window
+.help --- displays this window; works with '.' prefix or custom prefix
+.setup help --- displays commands for server settings; must have admin rank
 .rules --- server rules
 .guard --- official AnimeGuard logo
 .play despacito --- plays despacito

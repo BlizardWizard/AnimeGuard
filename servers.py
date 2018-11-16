@@ -4,22 +4,30 @@ from discord.ext import commands
 import asyncio
 import time
 import os
+import json
 
-class Server:
-    def __init__(self, serverIN):
-        self.server = serverIN.id
-        self.serverIndex = retrieve_server(serverIN)
-        self.prefix
-        self.approval
-        self.upvote
-        self.downvote
 
-    def replace_setting(self, datatype):
-        if datatype == "prefix":
-            10
+def get_setting(settingRequest, serverid):
+    with open("servers/" + str(serverid) + "/settings.json", 'r') as server_json_settings:
+        server_settings = json.load(server_json_settings)
+        server_json_settings.close()
+        for setting in server_settings:
+            if setting == settingRequest:
+                return server_settings[setting]
 
-    def get_settings(self):
-        5
+def replace_setting(settingRequest, settingReplace, serverid):
+    with open("servers/" + str(serverid) + "/settings.json", 'r') as server_json_settings:
+        server_settings = json.load(server_json_settings)
+        server_json_settings.close()
+        for setting in server_settings:
+            if setting == settingRequest:
+                server_settings[setting] = settingReplace
+        with open("servers/" + str(serverid) + "/settings.json", 'w') as server_json_settings:
+            json.dump(server_settings, server_json_settings, indent=2)
+            server_json_settings.close()
+
+
+
 def get_server(id):
     server_file = open("servers/" + str(id) + "/test.txt", "r+")
     return server_file.readline()
