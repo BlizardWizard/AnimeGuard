@@ -1,0 +1,6 @@
+.setup prefix [prefix] --- sets the server's custom prefix
+.setup upvote [emoji] --- sets the upvote emoji in the '.poll' command
+.setup downvote [emoji] --- sets the downvote emoji in the '.poll' command
+.setup approval [emoji] --- sets the approval reaction for '.lockdown' mode
+.setup rank [@rank] --- sets rank to use higher level commands such as '.lockdown'
+.setup rules [text] --- sets response for the '.rules' command

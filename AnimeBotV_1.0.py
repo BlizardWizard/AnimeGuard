@@ -18,9 +18,9 @@ def inRoles(checkRole, user):
 
 
 
-def parseHelp():
+def parseTxt(file):
     commandsString = ""
-    commands_file = open("server_commands_help.txt", "r")
+    commands_file = open(file, "r")
     for line in commands_file:
         commandsString += line
     return commandsString
@@ -54,20 +54,33 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    servers.setup_dir(message.server.id)
-    print(servers.get_server(message.server.id))
-    contents = message.content.split(" ")
+
+    print(servers.get_setting("prefix", message.server.id))
+
+
 # Help command
-    if message.content.upper().startswith('.HELP'):
-        await bot.send_message(message.channel, "```" + parseHelp() + "```")
+    if (message.content.upper().startswith(servers.get_setting('prefix', str(message.server.id)) + 'HELP') or message.content.upper().startswith('.HELP')) and message.author.id != bot.user.id:
+        await bot.send_message(message.channel, "```---------------------Your server's prefix is '" + servers.get_setting('prefix', message.server.id) + "'---------------------\n\n" + parseTxt("server_commands_help.txt") + "```")
 
 # .setup command, various setup commands for per server bot settings
-    if message.content.upper().startswith('.SETUP'):
-        if message.content.upper().replace('.SETUP ', '').startswith('PREFIX'):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'SETUP') and message.author.id != bot.user.id:
+        subCommand = message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'SETUP ', '')
+
+    # '.setup prefix' sub-command that allows the server to have its own custom command prefix
+        if subCommand.startswith('PREFIX'):
             for server in servers.get_servers():
                 if server == message.server.id:
-                    prefix = message.content.upper().replace('.SETUP PREFIX ', '')
-                    print(prefix)
+                    prefix = message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'SETUP PREFIX ', '')
+                    servers.replace_setting('prefix', prefix, message.server.id)
+                    await bot.send_message(message.channel, "```Successfully changed prefix to '%s'```" % prefix)
+
+            # '.setup help' sub-command that displays the setup help window
+        elif subCommand.startswith('HELP') or subCommand.startswith(''):
+            await bot.send_message(message.channel,
+                                   "```----------User must have admin role to use '.setup' commands----------\n\n" + open(
+                                       "server_setup_help.txt", 'r').read() + "```")
+
+
 
 # Filters out words from the chat filter
     approval = True
@@ -85,6 +98,7 @@ async def on_message(message):
                     except:
                         return
 
+        contents = message.content.split(" ")
         for word in contents:
             if word.upper() in chat_filter:
                 if message.author.id not in bypass_list:
@@ -99,7 +113,7 @@ async def on_message(message):
             await bot.add_reaction(message, ":approved1:512134336519340033")
 
 # lockdown toggle command, for the approval stamps
-    if message.content.upper().startswith('.LOCKDOWN') and inRoles("512120756507770891", message.author):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'LOCKDOWN') and inRoles("512120756507770891", message.author):
         if lockDown[0] == 1:
             lockDown[0] = 2
             await bot.send_message(message.channel, "```Lockdown Mode Disabled```")
@@ -119,12 +133,12 @@ async def on_message(message):
                 return
 
 # Rules image command
-    if message.content.upper().startswith('.RULES'):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'RULES'):
         await bot.send_file(message.channel, "assets/rules.png")
         await bot.send_message(message.channel, "```^The Sacred Texts^```")
 
 # Anime eye image command
-    if message.content.upper().startswith('.GUARD'):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'GUARD'):
         await bot.send_file(message.channel, "assets/AnimeEyes.png")
         await bot.send_message(message.channel, "```I'm Always Watching```")
 
@@ -134,58 +148,58 @@ async def on_message(message):
 
 # Poll command
     pollUser = message.author.id
-    if message.content.upper().startswith('.POLL'):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'POLL'):
         if len(polls) != 0:
             for poll in polls:
                 if poll.user == message.author.id:
                     await bot.send_message(message.channel, "```You have already made a poll --- do \'.tally\' to see the results!```")
                 else:
-                    query = message.content.upper().replace('.POLL', '')
+                    query = message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'POLL', '')
                     response = await bot.send_message(message.channel, "```Poll query!\n" + query + "```")
                     await bot.add_reaction(response, ":thumbsup1:511780305833558026")
                     await bot.add_reaction(response, ":thumbsdown1:511780358690439168")
                     polls.add(Poll(message, response))
         else:
-            query = message.content.upper().replace('.POLL ', '')
+            query = message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'POLL ', '')
             response = await bot.send_message(message.channel, "```Poll query!\n     " + query + "```")
             await bot.add_reaction(response, ":thumbsup1:511780305833558026")
             await bot.add_reaction(response, ":thumbsdown1:511780358690439168")
             polls.append(Poll(message, response))
 
 # Tally command, works with poll command
-    if message.content.upper().startswith('.TALLY'):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'TALLY'):
         for poll in polls:
             if poll.user == message.author.id:
                 yay = poll.upVote
                 nay = poll.downVote
-                await bot.send_message(message.channel, "```The Results To \"" + poll.origMessage.content.upper().replace('.POLL ', '') + "\" Are in!\nYay -- " + str(yay) + "\nNay -- " + str(nay) + "```")
+                await bot.send_message(message.channel, "```The Results To \"" + poll.origMessage.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'POLL ', '') + "\" Are in!\nYay -- " + str(yay) + "\nNay -- " + str(nay) + "```")
                 polls.remove(poll)
 
 # Chat filter commands
-    if message.content.upper().startswith('.FILTER') and inRoles("512120756507770891", message.author):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'FILTER') and inRoles("512120756507770891", message.author):
         # '.filter add {}' command
-        if message.content.upper().replace('.FILTER ', '').startswith('ADD') and filter.isValidFilter(message.content.upper().replace('.FILTER ADD ', ''), filter_bans) and message.content.upper().replace('.FILTER ADD ', '') not in filter.filter_update():
-            term = message.content.upper().replace('.FILTER ADD ', '')
+        if message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ', '').startswith('ADD') and filter.isValidFilter(message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ADD ', ''), filter_bans) and message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ADD ', '') not in filter.filter_update():
+            term = message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ADD ', '')
             await bot.send_message(message.channel, "```Term \'%s\' Added to Chat Filter```" % term)
             filter_file = open("chat_filter.txt", "a")
             filter_file.write(term + "\n")
             filter_file.close()
         # errors for '.filter add {}' command
-        elif message.content.upper().replace('.FILTER ', '').startswith('ADD') and not filter.isValidFilter(message.content.upper().replace('.FILTER ADD ', ''), filter_bans): # invalid filter characters
+        elif message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ', '').startswith('ADD') and not filter.isValidFilter(message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ADD ', ''), filter_bans): # invalid filter characters
             await bot.send_message(message.channel, "```Invaild Filter Input\nPlease only use alphanumeric characters a-z, 0-9```")
-        elif message.content.upper().replace('.FILTER ', '').startswith('ADD') and message.content.upper().replace('.FILTER ADD ', '') in filter.filter_update(): # term already in filter list
+        elif message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ', '').startswith('ADD') and message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ADD ', '') in filter.filter_update(): # term already in filter list
             await bot.send_message(message.channel, "```Term is already in filter list```")
         # '.filter remove {}' command
-        elif message.content.upper().replace('.FILTER ', '').startswith('REMOVE'):
-            term = message.content.upper().replace('.FILTER REMOVE ', '')
+        elif message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ', '').startswith('REMOVE'):
+            term = message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER REMOVE ', '')
             filter.filter_remove(term)
             await bot.send_message(message.channel, "```Term \'%s\' Removed```" % term)
-        elif message.content.upper().replace('.FILTER ', '').startswith('LIST'):
+        elif message.content.upper().replace(servers.get_setting('prefix', message.server.id) + 'FILTER ', '').startswith('LIST'):
             await bot.send_message(message.channel, "```" + str(filter.filter_update()) + "```")
-    elif message.content.upper().startswith('.FILTER') and not inRoles("512120756507770891", message.author) and message.author.id != bot.user.id:
+    elif message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'FILTER') and not inRoles("512120756507770891", message.author) and message.author.id != bot.user.id:
         await bot.send_message(message.channel, noPerms)
 
-    if message.content.upper().startswith('.REACTION'):
+    if message.content.upper().startswith(servers.get_setting('prefix', message.server.id) + 'REACTION'):
         await bot.add_reaction(message, ":thumbsup1:511780305833558026")
 
 # on reaction event, particularly for the '.poll' command
