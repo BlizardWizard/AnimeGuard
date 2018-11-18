@@ -5,6 +5,7 @@ import asyncio
 import time
 import os
 import json
+from shutil import copyfile
 
 
 def get_setting(settingRequest, serverid):
@@ -14,6 +15,7 @@ def get_setting(settingRequest, serverid):
         for setting in server_settings:
             if setting == settingRequest:
                 return server_settings[setting]
+
 
 def replace_setting(settingRequest, settingReplace, serverid):
     with open("servers/" + str(serverid) + "/settings.json", 'r') as server_json_settings:
@@ -27,10 +29,10 @@ def replace_setting(settingRequest, settingReplace, serverid):
             server_json_settings.close()
 
 
-
 def get_server(id):
     server_file = open("servers/" + str(id) + "/test.txt", "r+")
     return server_file.readline()
+
 
 def get_servers():
     server_list = []
@@ -40,11 +42,13 @@ def get_servers():
     server_list_file.close()
     return server_list
 
+
 def update_servers(bot):
     server_list_file = open("server_list.txt", "w")
     for server in bot.servers:
       server_list_file.write(server.id + "\n")
     server_list_file.close()
+
 
 def retrieve_server(serverid):
     n = 0
@@ -52,12 +56,22 @@ def retrieve_server(serverid):
         if serverid == id:
             return n
 
+
 def setup_dir(id):
     directory = "servers/" + str(id)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    print(directory)
-    if not os.path.exists(directory + "/test.txt"):
-        open(directory + "/test.txt", 'a+').close()
+    if not os.path.exists(directory + "/settings.json"):
+        copyfile("template_server/settings.json", directory + "/settings.json")
+    if not os.path.exists(directory + "/chat_filter.txt"):
+        copyfile("template_server/chat_filter.txt", directory + "/chat_filter.txt")
+
+
+def isSetup(serverid):
+    with open("servers/" + serverid + "/settings.json") as settings:
+        if json.load(settings)['moderator'] != '':
+            return True
+        else:
+            return False
 
 

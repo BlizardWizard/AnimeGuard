@@ -1,4 +1,9 @@
 {
   "prefix": ".",
-  "upVote": ""
+  "upVote": "\ud83d\udc4d",
+  "downVote": "\ud83d\udc4e",
+  "approval": "\ud83d\udd35",
+  "moderator": "",
+  "parole": "",
+  "lockdown": false
 }
