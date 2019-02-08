@@ -13,3 +13,20 @@ AnimeGuard discord bot using python
 The default command prefix is '.'
 
 use '.help' in discord or look in 'server_commands_help.txt' to see commands and uses
+
+
+<hr/>
+
+## Bot Commands:
+.help --- displays this window; works with '.' prefix or custom prefix
+.setup help --- displays commands for server settings; must have admin rank
+.rules --- server rules
+.guard --- official AnimeGuard logo
+.play despacito --- plays despacito
+.poll --- runs a poll yes or no poll, only one per user at a time
+.tally --- tallys the results from a poll
+.lockdown --- toggles server lockdown mode (disables words from the chat filter and displays approval reactions)
+.filter add [term] --- adds a given term to the chat filter (only alphanumeric characters a-z, 0-9)
+.filter remove [term] --- removes a given term from the chat filter
+
+### Some commands may be implemented, but not updated in this list of commands
